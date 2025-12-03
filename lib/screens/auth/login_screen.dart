@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lodge_logic/components/snackbar.dart';
 import 'package:lodge_logic/screens/admin/admin_dashboard.dart';
+import 'package:lodge_logic/screens/admin/admin_dashboard_page.dart';
 import 'package:lodge_logic/screens/auth/components/input_fields.dart';
 import 'package:lodge_logic/screens/auth/sign_up_screen.dart';
 import 'package:lodge_logic/screens/owner/owner_dashboard.dart';
@@ -111,22 +112,23 @@ class LoginScreen extends StatelessWidget {
                         print(login.user!.userMetadata);
                         if (login.user != null) {
                           if (login.user!.userMetadata!["role"] ==
-                              "Guest House Admin") {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AdminDashboard(authResponse: login,),
-                              ),
-                            );
-                          } else if (login.user!.userMetadata!["role"] ==
                               "Guest House Owner") {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => OwnerDashboard(authResponse : login),
+                                builder: (context) => AdminDashboardPage(),
                               ),
                             );
-                          }
+                          } 
+                          // else if (login.user!.userMetadata!["role"] ==
+                          //     "Guest House Owner") {
+                          //   Navigator.push(
+                          //     context,
+                          //     MaterialPageRoute(
+                          //       builder: (context) => OwnerDashboard(authResponse : login),
+                          //     ),
+                          //   );
+                          // }
 
                           showCustomSnackbar(
                             context: context,

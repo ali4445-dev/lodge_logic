@@ -1,237 +1,309 @@
 import 'package:flutter/material.dart';
-import 'package:lodge_logic/components/snackbar.dart';
-import 'package:lodge_logic/global.dart';
-import 'package:lodge_logic/models/guest_house.dart';
-import 'package:lodge_logic/services/guest_house_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:lodge_logic/helper/themes.dart';
+import 'package:lodge_logic/screens/owner/components/custom_sidebar.dart';
+ // Assume this file exists
 
 class AddAdminScreen extends StatefulWidget {
   const AddAdminScreen({super.key});
 
   @override
-  _AddAdminScreenState createState() => _AddAdminScreenState();
+  State<AddAdminScreen> createState() => _AddAdminScreenState();
 }
 
 class _AddAdminScreenState extends State<AddAdminScreen> {
-  final nameCtrl = TextEditingController();
-  final emailCtrl = TextEditingController();
-  final pwdCtrl = TextEditingController();
+  String _name = '';
+  String _email = '';
+  String _password = '';
+  String? _role; // Dropdown value
+  final List<String> _roles = ['Super Admin', 'Admin', 'Manager'];
 
-  String? selectedGH;
-  List<GuestHouse> guestHouses = [];
-
-  bool loading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchGuestHouses();
+  void _handleSubmit() {
+    // ignore: avoid_print
+    print('Form submitted: Name: $_name, Email: $_email, Role: $_role');
   }
 
-  Future<void> fetchGuestHouses() async {
-    final houses = await GuestHouseService.getUserGuestHouses();
-
-    setState(() {
-      guestHouses = houses;
-    });
-  }
-
-  Future<void> createAdmin() async {
-    if (selectedGH == null) {
-      showCustomSnackbar(
-        context: context,
-        message: "Please select a Guest House to manage",
-        type: SnackbarType.info,
-      );
-      return;
-    }
-
-    setState(() => loading = true);
-    final supabase = Supabase.instance.client;
-
-    try {
-      // 1️⃣ Register Admin in AUTH
-      final authRes = await supabase.auth.signUp(
-        email: emailCtrl.text.trim(),
-        password: pwdCtrl.text.trim(),
-        data: {
-          "role":"Guest House Admin",
-          "name":nameCtrl.text,
-        }
-      );
-
-      if (authRes.user == null) {
-        throw "Admin registration failed.";
-      }
-
-      final adminUid = authRes.user!.id;
-
-      // 2️⃣ Insert Admin Object
-      await supabase.from("guest_house_admins").insert({
-        "admin_uid": adminUid,
-        "email": emailCtrl.text.trim(),
-        "name": nameCtrl.text.trim(),
-        "gh_id": selectedGH,
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Admin Created Successfully!"),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
-    }
-
-    setState(() => loading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    mq = MediaQuery.of(context).size;
-    return Scaffold(
-      body: Container(
-        height: double.infinity,
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0D47A1), Color(0xFF1976D2), Color(0xFF42A5F5)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-                Center(
-                  child: const Text(
-                    "Add Guest House Admin",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Center(
-                  child: const Text(
-                    "Create admin accounts for your guest houses",
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                // Name Field
-                _styledField(
-                  controller: nameCtrl,
-                  label: "Admin Name",
-                  icon: Icons.person,
-                ),
-
-                // Email Field
-                _styledField(
-                  controller: emailCtrl,
-                  label: "Admin Email",
-                  icon: Icons.email_outlined,
-                ),
-
-                // Password Field
-                _styledField(
-                  controller: pwdCtrl,
-                  label: "Password",
-                  icon: Icons.lock_outline,
-                  isPassword: true,
-                ),
-
-                const SizedBox(height: 20),
-
-                // Guest House Dropdown
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: selectedGH,
-                      borderRadius: BorderRadius.circular(15),
-                      hint: const Text("Select Guest House"),
-                      items: guestHouses.map((gh) {
-                        return DropdownMenuItem(
-                          value: gh.ghId, // <-- store ID
-                          child: Text(gh.name), // <-- show name
-                        );
-                      }).toList(),
-                      onChanged: (v) {
-                        setState(() => selectedGH = v);
-                      },
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 35),
-
-                // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: loading ? null : createAdmin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                    child: loading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            "Create Admin",
-                            style: TextStyle(color: Colors.white, fontSize: 18),
-                          ),
-                  ),
-                ),
-              ],
+  Widget _buildTextField({
+    required String label,
+    required String name,
+    required String placeholder,
+    required Function(String) onChanged,
+    bool isPassword = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Text(
+            '$label *',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.gray700,
             ),
           ),
         ),
+        TextFormField(
+          obscureText: isPassword,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            hintText: placeholder,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: AppColors.gray200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: AppColors.gray200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoleDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Row(
+            children: [
+              const Icon(Icons.shield, size: 16, color: AppColors.gray700),
+              const SizedBox(width: 8),
+              const Text(
+                'Role *',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.gray700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        DropdownButtonFormField<String>(
+          value: _role,
+          decoration: InputDecoration(
+            hintText: 'Select role',
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: AppColors.gray200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: AppColors.gray200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+            ),
+          ),
+          items: _roles.map((String role) {
+            return DropdownMenuItem<String>(
+              value: role,
+              child: Text(role),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            setState(() {
+              _role = newValue;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent(double screenWidth) {
+    return SingleChildScrollView(
+      padding: kPagePadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Area (Fixed height area with gradient)
+          Container(
+            height: 160, // approx h-64 * 0.75 for a better look
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9), Color(0xFF4F46E5)], // from-purple-600 via-purple-500 to-indigo-600
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(top: 8, bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text('Pages', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14)),
+                      Text(' / ', style: TextStyle(color: Colors.white.withOpacity(0.9))),
+                      Text('Manage Admins', style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w600)),
+                      Text(' / ', style: TextStyle(color: Colors.white.withOpacity(0.9))),
+                      Text('Add Admin', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Add New Admin', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const SizedBox(height: 4),
+                  const Text('Create a new administrator account', style: TextStyle(fontSize: 14, color: AppColors.purple100)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Form Card
+          Container(
+            padding: const EdgeInsets.all(32.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.0), // rounded-2xl
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
+              border: Border.all(color: AppColors.gray100),
+            ),
+            child: Form(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 600;
+                      return GridView.count(
+                        shrinkWrap: true,
+                        crossAxisCount: isWide ? 2 : 1,
+                        childAspectRatio: 3, // Adjust aspect ratio for better look
+                        mainAxisSpacing: 24.0,
+                        crossAxisSpacing: 24.0,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          _buildTextField(
+                            label: 'Full Name',
+                            name: 'name',
+                            placeholder: 'John Doe',
+                            onChanged: (val) => _name = val,
+                          ),
+                          _buildTextField(
+                            label: 'Email Address',
+                            name: 'email',
+                            placeholder: 'admin@example.com',
+                            onChanged: (val) => _email = val,
+                          ),
+                          _buildTextField(
+                            label: 'Password',
+                            name: 'password',
+                            placeholder: '••••••••',
+                            onChanged: (val) => _password = val,
+                            isPassword: true,
+                          ),
+                          _buildRoleDropdown(),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _handleSubmit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryPurple,
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Create Admin',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {},
+                          style: TextButton.styleFrom(
+                            backgroundColor: AppColors.gray100,
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.gray700),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // 🔵 Styled Input Fields (Reuse same login theme)
-  Widget _styledField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool isPassword = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: isPassword,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          labelText: label,
-          prefixIcon: Icon(icon, color: Colors.blue.shade900),
-        ),
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < kMobileBreakpoint;
+
+    return Scaffold(
+      backgroundColor: AppColors.gray50,
+      appBar: isMobile
+          ? AppBar(
+              title: const Text('Add Admin'),
+              backgroundColor: AppColors.primaryPurple,
+            )
+          : null,
+      drawer: isMobile ? const CustomSidebar(isDrawer: true) : null,
+      body: Row(
+        children: [
+          if (!isMobile) const CustomSidebar(),
+          Expanded(
+            child: Stack(
+              children: [
+                // Background Gradient (Absolute positioning effect)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 256,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9), Color(0xFF4F46E5)], // from-purple-600 via-purple-500 to-indigo-600
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
+                ),
+                // Main Content (z-10 relative)
+                Positioned.fill(
+                  child: _buildContent(screenWidth),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:lodge_logic/components/snackbar.dart';
 import 'package:lodge_logic/models/guest_house.dart';
-import 'package:lodge_logic/screens/owner/add_admin.dart';
+import 'package:lodge_logic/screens/owner/add_admin1.dart';
 import 'package:lodge_logic/screens/owner/add_guest_house.dart';
 import 'package:lodge_logic/services/guest_house_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
