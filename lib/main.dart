@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lodge_logic/screens/admin/landing_page.dart';
 import 'package:lodge_logic/screens/owner/add_admin.dart';
-import 'package:lodge_logic/screens/owner/add_admin1.dart' hide AddAdminScreen;
 import 'package:lodge_logic/screens/owner/add_guestHoues.dart';
 import 'package:lodge_logic/screens/owner/all_bookings.dart';
 import 'package:lodge_logic/screens/owner/contact_support.dart';
@@ -11,6 +11,7 @@ import 'package:lodge_logic/screens/owner/kyc_settings.dart';
 import 'package:lodge_logic/screens/owner/occupancy_report.dart';
 import 'package:lodge_logic/screens/owner/ownerdashboard.dart';
 import 'package:lodge_logic/screens/owner/password_settings.dart';
+import 'package:lodge_logic/services/user_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ADMIN SCREENS
@@ -20,6 +21,7 @@ import 'package:lodge_logic/screens/admin/admin_bookings_page.dart';
 import 'package:lodge_logic/screens/admin/admin_payments_page.dart';
 import 'package:lodge_logic/screens/admin/admin_complaints_page.dart';
 import 'package:lodge_logic/screens/admin/admin_content_management_page.dart';
+import 'package:lodge_logic/screens/admin/room_management_screen.dart';
 
 // AUTH SCREENS
 import 'package:lodge_logic/screens/auth/sign_in_screen.dart';
@@ -41,6 +43,7 @@ void main() async {
   }
 
   Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    print(data.session!.user.email);
     print("Session Refreshed");
   });
 
@@ -57,12 +60,15 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       // 👇 THIS MAKES SIGNIN THE DEFAULT PAGE
-      initialRoute: '/sign-in',
+      initialRoute: '/landing-page',
 
       // 👇 ALL YOUR NAMED ROUTES
       routes: {
         '/sign-in': (_) => SignInPage(),
-        '/login': (_) => LoginScreen(),   // if you need it
+
+        '/landing-page': (_) => LandingPage(),
+         // Sign out route
+        // '/login': (_) => LoginScreen(),   // if you need it
 
         '/dashboard': (_) => DashboardOverviewScreen(),
         '/guest-houses': (_) => const GuestHousesScreen(),
@@ -86,6 +92,7 @@ class MyApp extends StatelessWidget {
         '/admin-payments': (_) => const AdminPaymentsPage(),
         '/admin-complaints': (_) => const AdminComplaintsPage(),
         '/admin-content': (_) => const AdminContentManagementPage(),
+        '/admin-room-management': (_) => const RoomManagementScreen(),
       },
     );
   }

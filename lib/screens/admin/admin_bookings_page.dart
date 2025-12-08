@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lodge_logic/utils/app_state.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_sidebar_widget.dart';
 
 class Booking {
@@ -52,48 +54,47 @@ class _AdminBookingsPageState extends State<AdminBookingsPage> {
   }
 
   Future<void> fetchBookings() async {
-    // Simulated API call
-    await Future.delayed(Duration(seconds: 1));
-    setState(() {
-      bookings = [
-        Booking(
-          bookingId: 'BK001',
-          guestName: 'John Doe',
-          guestEmail: 'john@example.com',
-          guesthouseName: 'Paradise Inn',
-          roomNumber: '101',
-          checkIn: '2024-12-05',
-          checkOut: '2024-12-10',
-          amount: '\$500',
-          status: 'confirmed',
-          roomsCount: 1,
-          guestsCount: 2,
-          bookingDate: '2024-12-01',
-        ),
-        Booking(
-          bookingId: 'BK002',
-          guestName: 'Sarah Smith',
-          guestEmail: 'sarah@example.com',
-          guesthouseName: 'Ocean View',
-          roomNumber: '205',
-          checkIn: '2024-12-08',
-          checkOut: '2024-12-12',
-          amount: '\$450',
-          status: 'pending',
-          roomsCount: 1,
-          guestsCount: 3,
-          bookingDate: '2024-12-02',
-        ),
-      ];
-      
-      stats = {
-        'total': bookings.length,
-        'confirmed': bookings.where((b) => b.status == 'confirmed').length,
-        'pending': bookings.where((b) => b.status == 'pending').length,
-        'revenue': 950,
-      };
-      loading = false;
-    });
+    try {
+      if (AppState.userEmail == null) return;
+
+      final userResult = await Supabase.instance.client.from('users').select('user_id').eq('email', AppState.userEmail!).maybeSingle();
+      if (userResult == null) return;
+
+      // final adminResult = await Supabase.instance.client.from('admin').select('owner_id').eq('user_id', userResult['user_id']).maybeSingle();
+      // if (adminResult == null || adminResult['guesthouse_id'] == null) return;
+
+      final bookingsData = await Supabase.instance.client.from('booking').select('*, users!booking_guest_id_fkey(name, email), guesthouse!booking_guesthouse_id_fkey(name), room!booking_room_id_fkey(room_number)').eq('guest_id', userResult['user_id']).order('booking_date', ascending: false);
+
+      List<Booking> fetchedBookings = [];
+      double totalRevenue = 0;
+
+      for (var data in bookingsData) {
+        fetchedBookings.add(Booking(
+          bookingId: data['booking_id'] ?? '',
+          guestName: data['users']?['name'] ?? 'Unknown',
+          guestEmail: data['users']?['email'] ?? 'Unknown',
+          guesthouseName: data['guesthouse']?['name'] ?? 'Unknown',
+          roomNumber: data['room']?['room_number'] ?? 'N/A',
+          checkIn: data['check_in'] ?? '',
+          checkOut: data['check_out'] ?? '',
+          amount: '\$${data['amount'] ?? 0}',
+          status: data['status'] ?? 'pending',
+          roomsCount: data['rooms_count'] ?? 1,
+          guestsCount: data['guests_count'] ?? 1,
+          bookingDate: data['booking_date']?.split('T')[0] ?? '',
+        ));
+        if (data['status'] == 'confirmed' || data['status'] == 'completed') totalRevenue += (data['amount'] ?? 0).toDouble();
+      }
+
+      setState(() {
+        bookings = fetchedBookings;
+        stats = {'total': bookings.length, 'confirmed': bookings.where((b) => b.status == 'confirmed').length, 'pending': bookings.where((b) => b.status == 'pending').length, 'revenue': totalRevenue.toInt()};
+        loading = false;
+      });
+    } catch (e) {
+      print('Error: $e');
+      setState(() => loading = false);
+    }
   }
 
   Future<void> updateBookingStatus(String bookingId, String newStatus) async {

@@ -1,43 +1,47 @@
 class Admin {
-  final String adminUid;     // Supabase Auth UID
-  final String name;
-  final String email;
-  final String ghId;         // Guest House ID this admin manages
-  final DateTime? createdAt; // Optional: can be null
+  int? adminId;
+  int? userId;
+  int? ownerId;
+  String? name;
+  String? email;
+  DateTime? createdAt;
+  bool? isActive;
 
   Admin({
-    required this.adminUid,
-    required this.name,
-    required this.email,
-    required this.ghId,
+    this.adminId,
+    this.userId,
+    this.ownerId,
+    this.name,
+    this.email,
     this.createdAt,
+    this.isActive = true,
   });
 
-  // ------------------------------
   // FROM JSON
-  // ------------------------------
   factory Admin.fromJson(Map<String, dynamic> json) {
     return Admin(
-      adminUid: json['admin_uid'] ?? '',
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      ghId: json['gh_id'] ?? '',
+      adminId: json['admin_id'] as int?,
+      userId: json['user_id'] as int?,
+      ownerId: json['owner_id'] as int?,
+      // name: json['name'] as String?,
+      // email: json['email'] as String?,
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+          ? DateTime.parse(json['created_at'] as String)
           : null,
+      isActive: json['is_active'] as bool? ?? true,
     );
   }
 
-  // ------------------------------
   // TO JSON
-  // ------------------------------
   Map<String, dynamic> toJson() {
     return {
-      'admin_uid': adminUid,
-      'name': name,
-      'email': email,
-      'gh_id': ghId,
+      // 'admin_id': adminId,
+      'user_id': userId,
+      'owner_id': ownerId,
+      // 'name': name,
+      // 'email': email,
       'created_at': createdAt?.toIso8601String(),
+      'is_active': isActive ?? true,
     };
   }
 }

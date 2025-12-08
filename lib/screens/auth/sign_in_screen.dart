@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lodge_logic/components/snackbar.dart';
-import 'package:lodge_logic/screens/admin/admin_dashboard.dart';
 import 'package:lodge_logic/screens/admin/admin_dashboard_page.dart';
+import 'package:lodge_logic/screens/admin/landing_page.dart';
 import 'package:lodge_logic/screens/auth/sign_up_screen.dart';
-import 'package:lodge_logic/screens/owner/owner_dashboard.dart';
 import 'package:lodge_logic/screens/owner/ownerdashboard.dart';
+import 'package:lodge_logic/utils/app_state.dart';
+import 'package:lodge_logic/utils/password_utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignInPage extends StatefulWidget {
@@ -123,6 +124,8 @@ class _SignInPageState extends State<SignInPage> {
                     _buildDivider(),
                     const SizedBox(height: 16),
                     _buildGoogleButton(),
+                    const SizedBox(height: 16),
+                    _buildCustomerPortalButton(),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -131,6 +134,29 @@ class _SignInPageState extends State<SignInPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCustomerPortalButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LandingPage()),
+          );
+        },
+        child: const Text(
+          'Go to Customer Portal',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF2563EB),
+            fontWeight: FontWeight.w500,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
     );
   }
 
@@ -329,36 +355,47 @@ class _SignInPageState extends State<SignInPage> {
       child: ElevatedButton(
         onPressed: () async {
           if (_formKey.currentState!.validate()) {
-            //
             try {
               final supabase = Supabase.instance.client;
-              final login = await supabase.auth.signInWithPassword(
-                email: _emailController.text,
-                password: _passwordController.text,
-              );
+              
+              // 1. Search user in users table
+              final userResult = await supabase
+                  .from('users')
+                  .select()
+                  .eq('email', _emailController.text.trim())
+                  .maybeSingle();
 
-              print(login.user!.userMetadata);
-              if (login.user != null) {
-                if (login.user!.userMetadata!["role"] == "Guest House Admin") {
-                   Navigator.push(
+              if (userResult == null) {
+                throw Exception('User not found');
+              }
+
+              // 2. Verify password
+              // final hashedPassword = PasswordUtils.hashPassword(_passwordController.text);
+              if (userResult['password'] != _passwordController.text) {
+                throw Exception('Invalid password');
+              }
+
+              // 3. Save email to global state
+              AppState.userEmail = _emailController.text.trim();
+
+              // 4. Navigate based on role
+              final role = userResult['role'] as String;
+              if (mounted) {
+                if (role == 'admin') {
+                  Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) =>AdminDashboardPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => AdminDashboardPage()),
                   );
-                } else if (login.user!.userMetadata!["role"] ==
-                    "Guest House Owner") {
-                  Navigator.push(
+                } else if (role == 'owner') {
+                  Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) =>DashboardOverviewScreen(),
-                    ),
+                    MaterialPageRoute(builder: (context) => DashboardOverviewScreen()),
                   );
                 }
 
                 showCustomSnackbar(
                   context: context,
-                  message: "User ${login.user!.email} logged in successfully",
+                  message: "Logged in successfully",
                   type: SnackbarType.success,
                 );
               }
@@ -369,8 +406,6 @@ class _SignInPageState extends State<SignInPage> {
                 type: SnackbarType.error,
               );
             }
-
-            // Handle sign in
           }
         },
         style: ElevatedButton.styleFrom(

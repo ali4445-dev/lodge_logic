@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lodge_logic/screens/auth/sign_in_screen.dart';
 
 class AdminSidebarWidget extends StatefulWidget {
   final bool isDrawer;
@@ -87,7 +88,13 @@ class _AdminSidebarWidgetState extends State<AdminSidebarWidget> {
         Padding(
           padding: EdgeInsets.all(16),
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const SignInPage()),
+                (route) => false,
+              );
+            },
             icon: Icon(Icons.logout, size: 16),
             label: Text('Logout'),
             style: ElevatedButton.styleFrom(
@@ -113,35 +120,41 @@ class _AdminSidebarWidgetState extends State<AdminSidebarWidget> {
         'color': Colors.blue,
         'route': '/admin-dashboard',
       },
-      {
-        'title': 'User Management',
-        'icon': Icons.people,
-        'color': Colors.cyan,
-        'route': '/admin-all-users',
-      },
+      // {
+      //   'title': 'User Management',
+      //   'icon': Icons.people,
+      //   'color': Colors.cyan,
+      //   'route': '/admin-all-users',
+      // },
       {
         'title': 'Booking Management',
         'icon': Icons.event,
         'color': Colors.green,
         'route': '/admin-bookings',
       },
-      {
-        'title': 'Payment Management',
-        'icon': Icons.payment,
-        'color': Colors.purple,
-        'route': '/admin-payments',
-      },
+      // {
+      //   'title': 'Payment Management',
+      //   'icon': Icons.payment,
+      //   'color': Colors.purple,
+      //   'route': '/admin-payments',
+      // },
       {
         'title': 'Complaints',
         'icon': Icons.warning,
         'color': Colors.orange,
         'route': '/admin-complaints',
       },
+      // {
+      //   'title': 'Content Management',
+      //   'icon': Icons.description,
+      //   'color': Colors.indigo,
+      //   'route': '/admin-content',
+      // },
       {
-        'title': 'Content Management',
-        'icon': Icons.description,
-        'color': Colors.indigo,
-        'route': '/admin-content',
+        'title': 'Room Management',
+        'icon': Icons.meeting_room,
+        'color': Colors.teal,
+        'route': '/admin-room-management',
       },
     ];
 

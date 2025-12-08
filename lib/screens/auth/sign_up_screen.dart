@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lodge_logic/components/snackbar.dart';
-import 'package:lodge_logic/models/user_profile.dart';
+import 'package:lodge_logic/screens/auth/components/input_fields.dart';
 import 'package:lodge_logic/screens/auth/methods/sign_up.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -14,11 +14,9 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController =TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
 
-  String selectedRole = "Customer";
-  bool obscurePass = true;
-  bool obscureConfirm = true;
+  // String selectedRole = \"Customer\";
 
   @override
   Widget build(BuildContext context) {
@@ -28,19 +26,23 @@ class _SignUpPageState extends State<SignUpPage> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0052D4), Color(0xFF4364F7), Color(0xFF6FB1FC)],
+            colors: [
+              Color(0xFF0D47A1), // dark blue
+              Color(0xFF1976D2), // medium blue
+              Color(0xFF42A5F5), // light blue
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-
             children: [
-              const Icon(Icons.person_add_alt, size: 60, color: Colors.white),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
+              const Icon(Icons.home_filled, size: 80, color: Colors.white),
+              const SizedBox(height: 15),
               const Text(
                 "Create Account",
                 style: TextStyle(
@@ -52,68 +54,88 @@ class _SignUpPageState extends State<SignUpPage> {
               const SizedBox(height: 35),
 
               // Name
-              _inputField(
+              StylishInputField(
+                label: "Full Name",
+                icon: Icons.person_outlined,
                 controller: nameController,
-                icon: Icons.person,
-                hint: "Full Name",
               ),
-
-              const SizedBox(height: 18),
+              const SizedBox(height: 15),
 
               // Email
-              _inputField(
+              StylishInputField(
+                label: "Email",
+                icon: Icons.email_outlined,
                 controller: emailController,
-                icon: Icons.email,
-                hint: "Email",
               ),
-
-              const SizedBox(height: 18),
+              const SizedBox(height: 15),
 
               // Role Dropdown
-              _roleDropdown(),
-
-              const SizedBox(height: 18),
+              // Padding(
+              //   padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 8),
+              //   child: Container(
+              //     padding: const EdgeInsets.symmetric(horizontal: 15),
+              //     decoration: BoxDecoration(
+              //       // filled: true,
+              //       // fillColor: Colors.white.withOpacity(0.9),
+              //       borderRadius: BorderRadius.circular(15),
+              //       // border:Box OutlineInputBorder(
+              //       //   borderRadius: BorderRadius.circular(15),
+              //       //   borderSide: BorderSide.none,
+              //       // ),
+              //     ),
+              //     child: DropdownButtonFormField<String>(
+              //       value: selectedRole,
+              //       decoration: const InputDecoration(
+              //         border: InputBorder.none,
+              //         prefixIcon: Icon(Icons.person_3_outlined, color: Colors.blueAccent),
+              //       ),
+              //       items: const [
+              //         DropdownMenuItem(value: "Customer", child: Text("Customer")),
+              //         DropdownMenuItem(
+              //           value: "Guest House Owner",
+              //           child: Text("Guest House Owner"),
+              //         ),
+              //       ],
+              //       onChanged: (value) {
+              //         setState(() {
+              //           selectedRole = value!;
+              //         });
+              //       },
+              //     ),
+              //   ),
+              // ),
+              // const SizedBox(height: 15),
 
               // Password
-              _inputField(
-                controller: passwordController,
-                icon: Icons.lock,
-                hint: "Password",
+              StylishInputField(
+                label: "Password",
+                icon: Icons.lock_outline,
                 isPassword: true,
-                obscureText: obscurePass,
-                toggle: () {
-                  setState(() => obscurePass = !obscurePass);
-                },
+                controller: passwordController,
               ),
-
-              const SizedBox(height: 18),
+              const SizedBox(height: 15),
 
               // Confirm Password
-              _inputField(
-                controller: confirmPasswordController,
+              StylishInputField(
+                label: "Confirm Password",
                 icon: Icons.lock_outline,
-                hint: "Confirm Password",
                 isPassword: true,
-                obscureText: obscureConfirm,
-                toggle: () {
-                  setState(() => obscureConfirm = !obscureConfirm);
-                },
+                controller: confirmPasswordController,
               ),
-
               const SizedBox(height: 30),
 
               // Sign Up Button
               Container(
-                width: double.infinity,
+                width: 260,
                 height: 55,
                 decoration: BoxDecoration(
-                  color: Colors.orange,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: const [
+                  color: Colors.orange.shade600,
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
                     BoxShadow(
-                      color: Colors.black26,
-                      offset: Offset(0, 3),
-                      blurRadius: 8,
+                      color: Colors.black.withOpacity(0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -137,8 +159,16 @@ class _SignUpPageState extends State<SignUpPage> {
                         name: name,
                         email: email,
                         password: pass,
-                        role: selectedRole,
+                        role: "owner",
                       );
+                      showCustomSnackbar(
+                        context: context,
+                        message: "Account created successfully! Please login.",
+                        type: SnackbarType.success,
+                      );
+                      if (mounted) {
+                        Navigator.pop(context);
+                      }
                     } catch (e) {
                       showCustomSnackbar(
                         context: context,
@@ -146,8 +176,6 @@ class _SignUpPageState extends State<SignUpPage> {
                         type: SnackbarType.error,
                       );
                     }
-
-                    // TODO: Add Supabase Sign Up Logic
                   },
                   child: const Text(
                     "SIGN UP",
@@ -189,69 +217,6 @@ class _SignUpPageState extends State<SignUpPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // ---------------- INPUT FIELD WIDGET ----------------
-  Widget _inputField({
-    required TextEditingController controller,
-    required IconData icon,
-    required String hint,
-    bool isPassword = false,
-    bool obscureText = false,
-    VoidCallback? toggle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscureText,
-        decoration: InputDecoration(
-          icon: Icon(icon, color: Colors.blue),
-          border: InputBorder.none,
-          hintText: hint,
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    obscureText ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey,
-                  ),
-                  onPressed: toggle,
-                )
-              : null,
-        ),
-      ),
-    );
-  }
-
-  // ---------------- ROLE DROPDOWN ----------------
-  Widget _roleDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: DropdownButtonFormField<String>(
-        value: selectedRole,
-        decoration: const InputDecoration(border: InputBorder.none),
-        items: const [
-          DropdownMenuItem(value: "Customer", child: Text("Customer")),
-          DropdownMenuItem(
-            value: "Guest House Owner",
-            child: Text("Guest House Owner Account"),
-          ),
-        ],
-        onChanged: (value) {
-          setState(() {
-            selectedRole = value!;
-          });
-        },
       ),
     );
   }

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminDashboard extends StatelessWidget {
-  AuthResponse authResponse ;
+  final AuthResponse authResponse;
   
-  AdminDashboard({super.key,required this.authResponse});
+  const AdminDashboard({super.key,required this.authResponse});
 
   @override
   Widget build(BuildContext context) {

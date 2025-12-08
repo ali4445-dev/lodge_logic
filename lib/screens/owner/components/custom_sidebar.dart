@@ -1,6 +1,8 @@
 // (Same as the one provided in the previous response)
 import 'package:flutter/material.dart';
 import 'package:lodge_logic/helper/themes.dart';
+import 'package:lodge_logic/screens/auth/sign_in_screen.dart';
+import 'package:lodge_logic/services/user_service.dart';
 
 
 class CustomSidebar extends StatelessWidget {
@@ -29,13 +31,14 @@ class CustomSidebar extends StatelessWidget {
     final List<Map<String, dynamic>> menuItems = [
       {'title': 'Dashboard', 'icon': AppIcons.dashboard, 'route': '/dashboard'},
       {'title': 'Guest Houses', 'icon': AppIcons.building, 'route': '/guest-houses'},
-      {'title': 'All Rooms', 'icon': AppIcons.bedDouble, 'route': '/all-rooms'},
+      // {'title': 'All Rooms', 'icon': AppIcons.bedDouble, 'route': '/all-rooms'},
       {'title': 'All Bookings', 'icon': AppIcons.calendarCheck, 'route': '/bookings'},
       {'title': 'Assign Admin', 'icon': AppIcons.users, 'route': '/add-admin'},
       {'title': 'Occupancy Report', 'icon': AppIcons.pieChart, 'route': '/occupancy-report'},
       {'title': 'KYC Settings', 'icon': AppIcons.fileCheck, 'route': '/kyc-settings'},
       {'title': 'Password Settings', 'icon': AppIcons.lock, 'route': '/password-settings'},
       {'title': 'Contact Support', 'icon': AppIcons.contact, 'route': '/contact-support'},
+      {'title': 'Sign Out', 'icon':Icons.exit_to_app, 'route': '/sign-out'},
     ];
 
     return Container(
@@ -104,9 +107,17 @@ class CustomSidebar extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
-                onTap: () {
-                  if (isDrawer) Navigator.pop(context);
-                  Navigator.pushNamed(context, item['route']);
+                onTap: () async {
+                  if (item['title'] == 'Sign Out') {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SignInPage()),
+                      (route) => false,
+                    );
+                  } else {
+                    if (isDrawer) Navigator.pop(context);
+                    Navigator.pushNamed(context, item['route']);
+                  }
                 },
               ),
             );

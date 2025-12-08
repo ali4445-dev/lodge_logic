@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lodge_logic/components/snackbar.dart';
-import 'package:lodge_logic/screens/admin/admin_dashboard.dart';
 import 'package:lodge_logic/screens/admin/admin_dashboard_page.dart';
 import 'package:lodge_logic/screens/auth/components/input_fields.dart';
 import 'package:lodge_logic/screens/auth/sign_up_screen.dart';
-import 'package:lodge_logic/screens/owner/owner_dashboard.dart';
+// import 'package:lodge_logic/screens/owner/owner_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatelessWidget {

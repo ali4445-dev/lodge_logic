@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:lodge_logic/global.dart';
 import 'package:lodge_logic/helper/themes.dart';
+import 'package:lodge_logic/models/admin.dart';
+import 'package:lodge_logic/models/guest_house.dart';
+import 'package:lodge_logic/models/user_profile.dart';
 import 'package:lodge_logic/screens/owner/components/custom_sidebar.dart';
- // Assume this file exists
+import 'package:lodge_logic/services/admin_service.dart';
+import 'package:lodge_logic/services/guest_house_service.dart';
+import 'package:lodge_logic/services/user_service.dart';
+import 'package:lodge_logic/utils/password_utils.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddAdminScreen extends StatefulWidget {
   const AddAdminScreen({super.key});
@@ -16,10 +24,126 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
   String _password = '';
   String? _role; // Dropdown value
   final List<String> _roles = ['Super Admin', 'Admin', 'Manager'];
+  
+  GuestHouse? _selectedGuestHouse;
+  List<GuestHouse> _guestHouses = [];
+  bool _loadingGuestHouses = true;
+  bool _passwordVisible = false;
 
-  void _handleSubmit() {
-    // ignore: avoid_print
-    print('Form submitted: Name: $_name, Email: $_email, Role: $_role');
+  @override
+  void initState() {
+    super.initState();
+    _loadGuestHouses();
+  }
+
+  Future<void> _loadGuestHouses() async {
+    try {
+      final houses = await GuestHouseService.getUserGuestHouses();
+      setState(() {
+        _guestHouses = houses;
+        _loadingGuestHouses = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loadingGuestHouses = false;
+      });
+      // ignore: avoid_print
+      print('Error loading guest houses: $e');
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (_name.isEmpty || _email.isEmpty || _password.isEmpty || _selectedGuestHouse == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    try {
+      // 1. Sign up admin via Supabase Auth
+      // final authResponse = await Supabase.instance.client.auth.signUp(
+      //   email: _email,
+      //   password: _password,
+      //   data: {
+      //    "role":"admin",
+      //    "name":_name, 
+      //   }
+      // );
+
+      // if (authResponse.user == null) {
+      //   throw Exception('Failed to create auth user');
+      // }
+
+      // 2. Hash password
+      final hashedPassword = PasswordUtils.hashPassword(_password);
+
+      // 3. Create user in users table
+      final userCreated = await UserService.createUser(
+        UserProfile(
+          name: _name,
+          email: _email,
+          role: "admin",
+          password: hashedPassword,
+          isApproved: true,
+        ),
+      );
+
+      if (!userCreated) {
+        throw Exception('Failed to create user in users table');
+      }
+
+      // 3. Get the created user's ID
+      final createdUser = await UserService.getUserByEmail(_email);
+      if (createdUser == null || createdUser.userId == null) {
+        throw Exception('Failed to retrieve created user');
+      }
+
+      // 4. Get current owner's ID
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('No owner logged in');
+      }
+
+      final ownerResult = await Supabase.instance.client
+          .from('users')
+          .select('user_id')
+          .eq('email', currentUser.email!)
+          .maybeSingle();
+
+      if (ownerResult == null) {
+        throw Exception('Owner not found');
+      }
+
+      // 5. Create admin in admins table
+      final admin = Admin(
+        userId: createdUser.userId,
+        ownerId: ownerResult['user_id'] as int,
+        name: _name,
+        email: _email,
+        isActive: true,
+      );
+
+      final adminCreated = await AdminService.createAdmin(admin);
+
+      if (!adminCreated) {
+        throw Exception('Failed to create admin in admins table');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Admin created successfully!'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Error: ${e.toString()}'), backgroundColor: Colors.red),
+        );
+      }
+      print('Error creating admin: $e');
+    }
   }
 
   Widget _buildTextField({
@@ -34,8 +158,8 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
-          child: Text(
-            '$label *',
+          child:Text(
+            label,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -44,11 +168,24 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
           ),
         ),
         TextFormField(
-          obscureText: isPassword,
+          obscureText: isPassword ? !_passwordVisible : false,
           onChanged: onChanged,
           decoration: InputDecoration(
             hintText: placeholder,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                      color: AppColors.gray700,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _passwordVisible = !_passwordVisible;
+                      });
+                    },
+                  )
+                : null,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
               borderSide: const BorderSide(color: AppColors.gray200),
@@ -121,6 +258,74 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
       ],
     );
   }
+ 
+  Widget _buildGuestHouseDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Row(
+            children: [
+              const Icon(Icons.home, size: 16, color: AppColors.gray700),
+              const SizedBox(width: 8),
+              const Text(
+                'Guest House *',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.gray700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _loadingGuestHouses
+            ? Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.gray200),
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+                child: const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : DropdownButtonFormField<GuestHouse>(
+                value: _selectedGuestHouse,
+                decoration: InputDecoration(
+                  hintText: 'Select guest house',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: const BorderSide(color: AppColors.gray200),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: const BorderSide(color: AppColors.gray200),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: const BorderSide(color: AppColors.primaryPurple, width: 2),
+                  ),
+                ),
+                items: _guestHouses.map((GuestHouse house) {
+                  return DropdownMenuItem<GuestHouse>(
+                    value: house,
+                    child: Text(house.name),
+                  );
+                }).toList(),
+                onChanged: (GuestHouse? newValue) {
+                  setState(() {
+                    _selectedGuestHouse = newValue;
+                  });
+                },
+              ),
+      ],
+    );
+  }
 
   Widget _buildContent(double screenWidth) {
     return SingleChildScrollView(
@@ -129,44 +334,12 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Area (Fixed height area with gradient)
-          Container(
-            height: 160, // approx h-64 * 0.75 for a better look
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9), Color(0xFF4F46E5)], // from-purple-600 via-purple-500 to-indigo-600
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.only(top: 8, bottom: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text('Pages', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14)),
-                      Text(' / ', style: TextStyle(color: Colors.white.withOpacity(0.9))),
-                      Text('Manage Admins', style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w600)),
-                      Text(' / ', style: TextStyle(color: Colors.white.withOpacity(0.9))),
-                      Text('Add Admin', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Add New Admin', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const SizedBox(height: 4),
-                  const Text('Create a new administrator account', style: TextStyle(fontSize: 14, color: AppColors.purple100)),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-
+         
           // Form Card
           Container(
             padding: const EdgeInsets.all(32.0),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color:const Color.fromARGB(255, 37, 123, 235),
               borderRadius: BorderRadius.circular(16.0), // rounded-2xl
               boxShadow: [
                 BoxShadow(
@@ -207,50 +380,38 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
                           _buildTextField(
                             label: 'Password',
                             name: 'password',
-                            placeholder: '••••••••',
+                            placeholder: 'Enter a secure password',
                             onChanged: (val) => _password = val,
                             isPassword: true,
                           ),
-                          _buildRoleDropdown(),
+                        
+                          _buildGuestHouseDropdown(),
                         ],
                       );
                     },
                   ),
                   const SizedBox(height: 32),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _handleSubmit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryPurple,
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Create Admin',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
-                          ),
+                  Center(
+                    child: SizedBox(
+                      width: mq!.width*0.3,
+                      child: ElevatedButton(
+                        
+                        onPressed: _handleSubmit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.blue600,
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+                          elevation: 0,
+                        
+                        ),
+                        child: const Text(
+                          'Assign Admin',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () {},
-                          style: TextButton.styleFrom(
-                            backgroundColor: AppColors.gray100,
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-                          ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.gray700),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
+                  const SizedBox(width: 16),
                 ],
               ),
             ),
@@ -262,8 +423,8 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < kMobileBreakpoint;
+    mq = MediaQuery.of(context).size;
+    final isMobile = mq!.width < kMobileBreakpoint;
 
     return Scaffold(
       backgroundColor: AppColors.gray50,
@@ -298,7 +459,7 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
                 ),
                 // Main Content (z-10 relative)
                 Positioned.fill(
-                  child: _buildContent(screenWidth),
+                  child: _buildContent(mq!.width),
                 ),
               ],
             ),

@@ -24,34 +24,34 @@ class DashboardOverviewScreen extends StatelessWidget {
    DashboardOverviewScreen({super.key});
 
  final List<DashboardMetric> metrics =  [
-    DashboardMetric(
-      title: 'Total Revenue',
-      value: '\$45,231',
-      change: 12.5,
-      iconBg: AppColors.green600,
-      icon: Icons.attach_money_rounded,
-    ),
-    DashboardMetric(
-      title: 'New Bookings',
-      value: '1,342',
-      change: 4.8,
-      iconBg: AppColors.blue600,
-      icon: AppIcons.calendarCheck,
-    ),
-    DashboardMetric(
-      title: 'Occupancy Rate',
-      value: '72%',
-      change: -1.2,
-      iconBg: AppColors.orange600,
-      icon: Icons.trending_up_rounded,
-    ),
-    DashboardMetric(
-      title: 'Active Guests',
-      value: '105',
-      change: 2.1,
-      iconBg: AppColors.primaryPurple,
-      icon: AppIcons.users,
-    ),
+    // DashboardMetric(
+    //   title: 'Total Revenue',
+    //   value: '\$45,231',
+    //   change: 12.5,
+    //   iconBg: AppColors.green600,
+    //   icon: Icons.attach_money_rounded,
+    // ),
+    // DashboardMetric(
+    //   title: 'New Bookings',
+    //   value: '1,342',
+    //   change: 4.8,
+    //   iconBg: AppColors.blue600,
+    //   icon: AppIcons.calendarCheck,
+    // ),
+    // DashboardMetric(
+    //   title: 'Occupancy Rate',
+    //   value: '72%',
+    //   change: -1.2,
+    //   iconBg: AppColors.orange600,
+    //   icon: Icons.trending_up_rounded,
+    // ),
+    // DashboardMetric(
+    //   title: 'Active Guests',
+    //   value: '105',
+    //   change: 2.1,
+    //   iconBg: AppColors.primaryPurple,
+    //   icon: AppIcons.users,
+    // ),
   ];
   Widget _buildMetricCard(DashboardMetric metric) {
     final isPositive = metric.change >= 0;
@@ -70,7 +70,7 @@ class DashboardOverviewScreen extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -105,38 +105,39 @@ class DashboardOverviewScreen extends StatelessWidget {
           Text(
             metric.value,
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppColors.gray900,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(changeIcon, size: 14, color: changeColor),
-              const SizedBox(width: 4),
-              Text(
-                '${metric.change.abs()}%',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: changeColor,
+          const SizedBox(height: 4),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                Icon(changeIcon, size: 12, color: changeColor),
+                const SizedBox(width: 4),
+                Text(
+                  '${metric.change.abs()}%',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: changeColor,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
+                const SizedBox(width: 6),
+                Text(
                   'vs last month',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: AppColors.gray500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
